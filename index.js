@@ -81,7 +81,7 @@ let persons = [
     const person = {
       name: body.name,
       number: body.number,
-      id: Math.floor(Math.random() * 1000000), // Generate new id
+      id: Math.floor(Math.random() * 1000000), 
     }
   
     persons = persons.concat(person)
