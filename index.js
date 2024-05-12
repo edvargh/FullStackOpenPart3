@@ -2,27 +2,41 @@ require('dotenv').config()
 const express = require('express')
 const Person = require('./models/person')
 const app = express()
+const errorHandler = (error, request, response, next) => {
+  console.error(error.message)
+
+  if (error.name === 'CastError') {
+    return response.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
 
 app.use(express.json())
 app.use(express.static('dist'))
+app.use(errorHandler)
 
 
 
-  app.get('/info', async (request, response) => {
+  app.get('/info', async (request, response, next) => {
     const date = new Date();
       try {
           const count = await Person.countDocuments({});
           response.send(`<p>Phonebook has info for ${count} people</p><p>${date}</p>`);
       } catch (err) {
-          console.error(err);
-          response.status(500).json({ error: 'internal server error' });
+          next(err);
       }
     });
 
-  app.get('/api/persons', (request, response) => {
+  app.get('/api/persons', (request, response, next) => {
     Person.find({}).then(people => {
-      response.json(people)
+      if (people) {
+        response.json(people)
+      } else {
+        response.status(404).end()
+      }
     })
+    .catch(error => next(error))
   })
 
   app.get('/api/persons/:id', (request, response) => {
@@ -32,21 +46,14 @@ app.use(express.static('dist'))
   })
 
   app.delete('/api/persons/:id', (request, response) => {
-    Person.deleteOne({ _id: request.params.id })
+    Person.findByIdAndDelete(request.params.id)
       .then(result => {
-        if (result.deletedCount > 0) {
-          response.status(204).end()
-        } else {
-          response.status(404).json({ error: 'person not found' })
-        }
+        response.status(204).end()
       })
-      .catch(error => {
-        console.error(error)
-        response.status(500).json({ error: 'internal server error' })
-      })
+      .catch(error => next(error))
   })
 
-  app.post('/api/persons', (request, response) => {
+  app.post('/api/persons', (request, response, next) => {
     const body = request.body
   
     if (!body.name || !body.number) {
@@ -60,10 +67,11 @@ app.use(express.static('dist'))
       number: body.number,
     })
 
-    person.save().then(savedPerson => {
+    person.save()
+    .then(savedPerson => {
       response.json(savedPerson)
-  })
-
+    })
+    .catch(error => next(error))
   })
   
   const PORT = process.env.PORT
