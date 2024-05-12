@@ -62,16 +62,28 @@ app.use(errorHandler)
       })
     }
   
-    const person = new Person({
-      name: body.name,
-      number: body.number,
-    })
-
-    person.save()
-    .then(savedPerson => {
-      response.json(savedPerson)
-    })
-    .catch(error => next(error))
+    Person.findOne({ name: body.name })
+      .then(existingPerson => {
+        if (existingPerson) {
+          Person.findByIdAndUpdate(existingPerson._id, { number: body.number }, { new: true })
+            .then(updatedPerson => {
+              response.json(updatedPerson)
+            })
+            .catch(error => next(error))
+        } else {
+          const person = new Person({
+            name: body.name,
+            number: body.number,
+          })
+  
+          person.save()
+            .then(savedPerson => {
+              response.json(savedPerson)
+            })
+            .catch(error => next(error))
+        }
+      })
+      .catch(error => next(error))
   })
   
   const PORT = process.env.PORT
