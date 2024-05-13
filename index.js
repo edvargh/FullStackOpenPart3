@@ -12,6 +12,7 @@ const errorHandler = (error, request, response, next) => {
   next(error)
 }
 
+//blabla
 app.use(express.json())
 app.use(express.static('dist'))
 app.use(errorHandler)
